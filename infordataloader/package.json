@@ -1,0 +1,31 @@
+{
+  "name": "infordataloader",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "homepage": "./",
+  "dependencies": {
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0"
+  },
+  "devDependencies": {
+    "axios": "^0.18.0",
+    "csvtojson": "^1.1.9",
+    "electron-packager": "^11.0.1",
+    "jquery": "^3.3.1",
+    "materialize-css": "^0.100.2",
+    "pluralize": "^7.0.0",
+    "react-scripts": "1.1.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "electron": "electron .",
+    "electron-dev": "set ELECTRON_START_URL=http://localhost:3000 && electron .",
+    "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --prune=true --out=release-builds --electron-version=1.8.2",
+    "package-win": "electron-packager . infordataloader --overwrite --asar --platform=win32 --arch=ia32 --icon=assets/icons/win/icon.ico --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Infor DataLoader\" --electron-version=1.8.2",
+    "package-linux": "electron-packager . electron-tutorial-app --overwrite --asar=true --platform=linux --arch=x64 --icon=assets/icons/png/1024x1024.png --prune=true --out=release-builds --electron-version=1.8.2"
+  }
+}
