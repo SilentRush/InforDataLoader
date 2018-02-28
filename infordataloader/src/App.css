@@ -8,3 +8,11 @@ display:table;
 width:100%;
 table-layout:fixed;
 }
+
+.tableBodyScroll tr.error{
+  color:'red';
+}
+
+body{
+  height: auto;
+}

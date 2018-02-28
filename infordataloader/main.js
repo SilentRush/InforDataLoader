@@ -8,8 +8,8 @@ let win = null;
 function createWindow() {
   // Initialize the window to our specified dimensions
   win = new BrowserWindow({
-    width: 1000,
-    height: 900,
+    width: 1200,
+    height: 800,
     webPreferences: { webSecurity: false }
   });
   const startUrl = process.env.ELECTRON_START_URL || url.format({

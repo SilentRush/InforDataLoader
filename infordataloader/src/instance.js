@@ -1,14 +1,16 @@
 import axios from 'axios';
 
-var instance = axios.create({
-  baseURL: 'http://eval.sssworld.com/sdata',
-  //timeout: 120000,
-  headers: {'Content-Type': 'application/json'},
-  auth: {
-    username: 'admin',
-    password: ''
-  },
-  withCredentials:true
-});
+var GetInstance = (username,password,url) => {
+  return axios.create({
+    baseURL: url,
+    //timeout: 120000,
+    headers: {'Content-Type': 'application/json'},
+    auth: {
+      username: username,
+      password: password
+    },
+    withCredentials:true
+  });
+}
 
-export default instance;
+export default GetInstance;
