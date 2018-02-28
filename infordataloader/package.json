@@ -15,7 +15,9 @@
     "jquery": "^3.3.1",
     "materialize-css": "^0.100.2",
     "pluralize": "^7.0.0",
-    "react-scripts": "1.1.1"
+    "react-scripts": "1.1.1",
+    "semantic-ui-css": "^2.3.0",
+    "semantic-ui-react": "^0.78.3"
   },
   "scripts": {
     "start": "react-scripts start",

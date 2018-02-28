@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 var instance = axios.create({
-  baseURL: 'https://slxweb.sssworld.com/sdata',
-  timeout: 60000,
+  baseURL: 'http://eval.sssworld.com/sdata',
+  //timeout: 120000,
   headers: {'Content-Type': 'application/json'},
   auth: {
-    username: 'twilkis',
-    password: 'twilkis99'
+    username: 'admin',
+    password: ''
   },
   withCredentials:true
 });
