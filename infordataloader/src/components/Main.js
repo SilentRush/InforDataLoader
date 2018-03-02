@@ -12,6 +12,9 @@ class Main extends Component {
   constructor(props){
     super(props);
     this.state = {
+      standardDataTypeId:"",
+      relationships:[],
+      datatypes:[],
       entities:[],
       headers:[],
       records:[],
@@ -119,9 +122,35 @@ class Main extends Component {
     }});
   }
 
+  batchGet = ()=>{
+    let {instance} = this.props;
+    let {batchsize} = this.state;
+    let mappedArray = _.times(50,()=>{
+      let record = {
+        $httpMethod:"GET",
+        $url:instance.defaults.baseURL + "/slx/dynamic/-/accounts?format=json",
+        where:"AccountName like '%test%'"
+      };
+      return record;
+    });
+    this.setState({isLoading:true});
+    ProcessBatch(instance,`/slx/dynamic/-/accounts/$batch?format=json`,mappedArray,mappedArray.length,batchsize,[],{success:(result)=>{
+      let recordResults = result.map((res)=>{
+        return {id:res.$key,created:(res.$httpMethod === "PUT" && res.$httpStatus === 200),success:(res.$httpStatus === 200),error:(res.$diagnoses) ? res.$diagnoses[0] : ""};
+      })
+      this.setState({isLoading:false,recordResults,activeIndex:2,progressPercentage:0});
+    },failure:(error)=>{
+      this.setState({isLoading:false,recordResults:[]});
+      console.log(error);
+    },progress:(progress)=>{
+      this.setState({progressPercentage:progress});
+    }});
+  }
+
   onSelectEntity(e,data){
-    this.getEntityProperties(data.value);
-    this.setState({selectedEntity:data.value});
+    let {entities} = this.state;
+    let properties = entities.find((entity)=>entity.name === data.value).properties.$resources;
+    this.setState({selectedEntity:data.value,properties});
   }
 
   onSelectProperty(property,index){
@@ -149,14 +178,45 @@ class Main extends Component {
     this.setState({records:recs});
   }
 
-  componentDidMount(){
+  getRelationships = () => {
     let {instance} = this.props;
-    QuerySdata(instance,'/slx/metadata/-/entities?format=json&select=name,tableName,displayName,sdata/pathName&count=50&orderby=name asc',[],{success:(result)=>{
+    QuerySdata(instance,'/slx/metadata/-/relationships?format=json&count=100&select=childEntity/$key,childProperty/propertyName,columns/childPropertyId,columns/parentPropertyId,parentEntity/$key,parentProperty/propertyName',[],{success:(result)=>{
+      let relationships = result.map((relationship)=>{
+        return {childEntity:relationship.childEntity.$key,parentEntity:relationship.parentEntity.$key,childPropertyName:relationship.childProperty.propertyName,parentPropertyName:relationship.parentProperty.propertyName,
+          childPropertyId:relationship.columns.$resources[0].childPropertyId,parentPropertyId:relationship.columns.$resources[0].parentPropertyId}
+      })
+      this.setState({relationships});
+    },failure:(error)=>{
+      console.log(error);
+      this.setState({relationships:[]});
+    }});
+  }
+
+  getDataTypes = () => {
+    let {instance} = this.props;
+    QuerySdata(instance,'/slx/metadata/-/dataTypes?format=json&count=50',[],{success:(result)=>{
+      let standardDataTypeId = result.find((res)=>res.name === "StandardIdDataType").$key
+      this.setState({datatypes:result,standardDataTypeId});
+    },failure:(error)=>{
+      console.log(error);
+      this.setState({datatypes:[]});
+    }});
+  }
+
+  getEntities = () => {
+    let {instance} = this.props;
+    QuerySdata(instance,'/slx/metadata/-/entities?format=json&select=name,tableName,displayName,sdata/pathName,properties/propertyName,properties/isKey,properties/dataTypeId,properties/length,properties/isReadOnly&count=50&orderby=name asc',[],{success:(result)=>{
       this.setState({entities:result});
     },failure:(error)=>{
       console.log(error);
       this.setState({entities:[]});
     }});
+  }
+
+  componentDidMount(){
+    this.getEntities();
+    this.getDataTypes();
+    this.getRelationships();
   }
 
   clear(){
@@ -211,7 +271,7 @@ class Main extends Component {
   }
 
   render() {
-    let {headers,records,entities,selectedEntity,properties,recordResults,activeIndex,recordsIndex,batchsize} = this.state;
+    let {headers,records,entities,selectedEntity,properties,recordResults,activeIndex,recordsIndex,batchsize,standardDataTypeId,relationships} = this.state;
     let selectedProperties = headers.filter((header)=>header.property).map((header)=>header.property);
     return (
       <div style={{margin:'10px'}}>
@@ -244,7 +304,20 @@ class Main extends Component {
                         <List.Content style={{padding:0}}>
                           <Label pointing='right' horizontal style={{fontSize:"16px"}}>{header.header}</Label>
                           <Dropdown placeholder='Select Property' value={header.property} onChange={(e,data)=>this.onSelectProperty(data.value,index)} search selection options={properties.filter((property)=>header.property == property.propertyName || !selectedProperties.includes(property.propertyName)).map((property)=>{
-                            return {key:property.propertyName,value: property.propertyName, text: property.propertyName}
+                            let text = property.propertyName;
+                            if(property.dataTypeId === standardDataTypeId && !property.isKey){
+                              let childRelationship = relationships.find((rel)=>rel.childPropertyId === property.$key);
+                              let parentRelationship = relationships.find((rel)=>rel.parentPropertyId === property.$key);
+                              if(childRelationship)
+                                text += ` (${childRelationship.childPropertyName})`
+                              else if(parentRelationship)
+                                text += ` (${parentRelationship.parentPropertyName})`;
+                              else{
+
+                              }
+
+                            }
+                            return {key:property.propertyName,value: property.propertyName, text}
                           })} />
                         </List.Content>
                       </List.Item>
@@ -351,10 +424,11 @@ class Main extends Component {
           {selectedEntity &&
           <Grid.Row>
             <Grid.Column width={16} floated='right' textAlign='right'>
-              <Input labelPosition='left' label="Batch Size" type="number" input={<NumericInput style={{input: {height: '100%'}}} min={0} max={200} value={50} valueAsNumber onChange={(b)=>this.setState({batchsize:b})}  value={batchsize} />} />
+              <Input labelPosition='left' label="Batch Size" type="number" input={<NumericInput style={{input: {height: '100%'}}} min={0} max={200} value={50} onChange={(b)=>this.setState({batchsize:b})}  value={batchsize} />} />
               <Button color='teal' onClick={this.batchInsert}>Insert</Button>
               <Button color='purple' onClick={this.batchUpdate}>Update</Button>
               <Button color='red' onClick={this.batchDelete}>Delete</Button>
+              <Button color='green' onClick={this.batchGet}>Get</Button>
             </Grid.Column>
           </Grid.Row>
           }
